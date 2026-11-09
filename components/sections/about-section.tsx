@@ -1,121 +1,122 @@
 "use client";
 
-import Image from "next/image";
-import { Award, Briefcase, CheckCircle2, TrendingUp, Users } from "lucide-react";
+import { ShieldCheck, Award, Users, Building2, Sparkles } from "lucide-react";
+import { company } from "@/lib/company";
+import { Reveal } from "@/components/reveal";
 
-const reasons = [
+const corporatePillars = [
+  {
+    icon: ShieldCheck,
+    title: "Ingeniería formal con código propio",
+    description:
+      "Soluciones mantenibles sobre estándares abiertos (Laravel, Vue.js, Python, Docker). Tu empresa mantiene el control de sus datos y aplicaciones.",
+  },
   {
     icon: Award,
-    title: "Experiencia técnica",
-    description: "Conocimiento en soporte TI, Microsoft 365, desarrollo web y soluciones digitales.",
+    title: "Rigor contractual y cumplimiento",
+    description:
+      "Alcance cerrado, actas de entrega, facturación electrónica y habilitación en el RNP para contrataciones con el Estado peruano.",
   },
   {
     icon: Users,
-    title: "Atención B2G",
-    description: "Experiencia en ventas a entidades públicas y empresas privadas.",
-  },
-  {
-    icon: Briefcase,
-    title: "Soluciones integrales",
-    description: "Equipamiento, cloud, desarrollo y consultoría en un solo lugar.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Enfoque moderno",
-    description: "Visión tecnológica y compromiso profesional continuo.",
+    title: "Acompañamiento técnico directo",
+    description:
+      "Capacitación presencial o remota, manuales de usuario y mesa de ayuda atendida por los ingenieros que conocen tu sistema.",
   },
 ];
 
-const highlights = ["RNP vigente", "Microsoft 365", "Soporte 24/7", "Atención personalizada"];
+const identity = [
+  { label: "Nombre Comercial", value: company.name },
+  { label: "Razón Social", value: company.legalName },
+  { label: "RUC", value: company.ruc, numeric: true },
+  { label: "Domicilio Fiscal", value: company.address },
+  { label: "Ámbito de Atención", value: "Lima Metropolitana y cobertura nacional (Perú)" },
+  { label: "Tipo de Empresa", value: "Empresa Individual de Responsabilidad Limitada (E.I.R.L.)" },
+];
 
-export function AboutSection() {
+export function AboutSection({ compact = false }: { compact?: boolean } = {}) {
   return (
-    <section id="nosotros" className="relative overflow-hidden py-16 sm:py-20">
-      <div className="absolute inset-0 bg-gradient-to-b from-card/30 via-background to-background" />
+    <section
+      id="nosotros"
+      className={`section-shell ${compact ? "py-12 sm:py-16" : "py-20 sm:py-24 lg:py-28"}`}
+    >
+      <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
+        <div className="aurora-glow absolute right-0 top-1/3 h-[400px] w-[520px]" />
+      </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid items-center gap-12 lg:grid-cols-2">
-          <div className="relative">
-            <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-card">
-              <Image src="/images/team.jpg" alt="Equipo FindTec" fill className="object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-tr from-background/80 via-transparent to-transparent" />
+      <div className="container-pro relative z-10">
+        {!compact && (
+          <Reveal className="max-w-3xl border-b border-border pb-10 sm:pb-14">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-widest text-primary">
+              <Sparkles className="h-3.5 w-3.5" />
+              Trayectoria y estándares
             </div>
-
-            <div className="glass glow-blue absolute -bottom-8 -right-4 rounded-lg p-6 sm:-right-8">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-primary">100+</div>
-                  <div className="mt-1 text-xs text-muted-foreground">Clientes</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-primary">150+</div>
-                  <div className="mt-1 text-xs text-muted-foreground">Proyectos</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="absolute -left-4 top-8 rounded-lg border border-primary/20 bg-primary/10 px-5 py-3 backdrop-blur-xl sm:-left-8">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
-                  <Award className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-foreground">B2G</div>
-                  <div className="text-xs text-muted-foreground">Proveedor preparado</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary">
-              Sobre nosotros
-            </span>
-
-            <h2 className="mt-6 text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-              Transformamos empresas con <span className="text-gradient">tecnología</span>
+            <h2 className="font-display mt-4 text-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+              Innovación tecnológica con{" "}
+              <span className="text-primary">respaldo operativo</span>
             </h2>
-
-            <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
-              FindTec Soluciones es una empresa peruana dedicada a la venta de equipos
-              tecnológicos, servicios de soporte técnico, soluciones cloud, desarrollo web
-              y consultoría tecnológica.
+            <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
+              {company.description}
             </p>
+          </Reveal>
+        )}
 
-            <div className="mt-8 flex flex-wrap gap-3">
-              {highlights.map((item) => (
-                <div
-                  key={item}
-                  className="flex items-center gap-2 rounded-full border border-border bg-secondary/70 px-4 py-2"
-                >
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium text-foreground">{item}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              {reasons.map((reason) => (
-                <div
-                  key={reason.title}
-                  className="group rounded-lg border border-border/70 bg-card/70 p-5 transition-all duration-300 hover:border-primary/30 hover:bg-secondary/60"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 transition-colors group-hover:bg-primary/20">
-                      <reason.icon className="h-6 w-6 text-primary" />
+        <div className={`grid gap-6 md:grid-cols-3 ${compact ? "mt-0" : "mt-10 sm:mt-12"}`}>
+          {corporatePillars.map((pillar, idx) => {
+            const Icon = pillar.icon;
+            return (
+              <Reveal
+                key={pillar.title}
+                delayClass={idx === 1 ? "delay-100" : idx === 2 ? "delay-200" : undefined}
+              >
+                <article className="card-premium flex h-full flex-col justify-between rounded-2xl p-6 sm:p-7">
+                  <div>
+                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary shadow-[0_0_22px_rgba(37,99,235,0.25)]">
+                      <Icon className="h-6 w-6" />
                     </div>
-                    <div>
-                      <h4 className="font-semibold text-foreground">{reason.title}</h4>
-                      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                        {reason.description}
-                      </p>
-                    </div>
+                    <h3 className="font-display text-lg font-bold text-foreground sm:text-xl">
+                      {pillar.title}
+                    </h3>
+                    <p className="mt-3 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                      {pillar.description}
+                    </p>
                   </div>
+                </article>
+              </Reveal>
+            );
+          })}
+        </div>
+
+        <Reveal className="mt-12">
+          <div className="surface-panel rounded-2xl p-6 sm:p-8">
+            <div className="flex items-center gap-2.5 border-b border-border pb-5">
+              <Building2 className="h-5 w-5 text-primary" />
+              <h3 className="font-display text-lg font-bold text-foreground">
+                Identificación corporativa y legal
+              </h3>
+            </div>
+
+            <dl className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {identity.map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-xl border border-border bg-secondary/50 p-4 dark:bg-black/30"
+                >
+                  <dt className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {item.label}
+                  </dt>
+                  <dd
+                    className={`mt-1.5 text-xs leading-relaxed text-foreground sm:text-sm ${
+                      item.numeric ? "font-mono text-base font-bold text-primary" : "font-medium"
+                    }`}
+                  >
+                    {item.value}
+                  </dd>
                 </div>
               ))}
-            </div>
+            </dl>
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

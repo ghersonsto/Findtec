@@ -16,3 +16,6 @@ node_modules
 .DS_Store
 *.zip
 .env
+*.tsbuildinfo
+.tmp-*
+.tmp*.png

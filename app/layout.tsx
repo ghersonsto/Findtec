@@ -1,8 +1,102 @@
+import type { Metadata, Viewport } from "next";
+import { JetBrains_Mono, Outfit, Plus_Jakarta_Sans } from "next/font/google";
+
+import { SiteFrame } from "@/components/site-frame";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { company } from "@/lib/company";
 import "./globals.css";
 
-export const dynamic = "force-dynamic";
+const outfit = Outfit({
+  subsets: ["latin"],
+  variable: "--font-outfit",
+  display: "swap",
+  weight: ["500", "600", "700", "800"],
+});
+
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-plus-jakarta",
+  display: "swap",
+  weight: ["500", "600", "700", "800"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+  weight: ["400", "500", "600"],
+  preload: false,
+});
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#030712" },
+  ],
+};
+
+const siteUrl = company.siteUrl || "https://findtec.pe";
+const description =
+  company.description ||
+  "Software de gestión, integraciones con IA, digitalización e infraestructura TI para empresas e instituciones en Perú.";
+const siteName = company.name || "Findtec Soluciones";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Findtec Soluciones",
+    template: "%s | Findtec Soluciones",
+  },
+  description,
+  keywords: [
+    "Findtec Soluciones",
+    "ERP",
+    "Laravel",
+    "Vue.js",
+    "MySQL",
+    "Docker",
+    "FastAPI",
+    "Python",
+    "Microsoft 365",
+    "digitalización Perú",
+  ],
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: {
+    canonical: siteUrl,
+  },
+  openGraph: {
+    type: "website",
+    locale: "es_PE",
+    siteName,
+    title: "Findtec Soluciones | Digitalización con software e IA",
+    description,
+    images: [
+      {
+        url: `${siteUrl}/images/findtec-mark.png`,
+        width: 512,
+        height: 512,
+        alt: siteName,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "Findtec Soluciones | Software e IA para negocios",
+    description,
+    images: [`${siteUrl}/images/findtec-mark.png`],
+  },
+  icons: {
+    icon: [{ url: "/images/findtec-mark.png", type: "image/png" }],
+    apple: [{ url: "/images/findtec-mark.png", type: "image/png" }],
+    shortcut: "/images/findtec-mark.png",
+  },
+};
 
 export default function RootLayout({
   children,
@@ -10,37 +104,31 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="bg-background" suppressHydrationWarning>
-      <head>
-        <title>FindTec Soluciones | Servicios TI, hardware y soporte empresarial</title>
-        <meta name="description" content={company.description} />
-        <meta
-          name="keywords"
-          content="FindTec, servicios TI Perú, soporte técnico empresarial, Microsoft 365, hardware empresarial, desarrollo web, automatización, Power BI"
-        />
-        <meta name="robots" content="index, follow" />
-        <link rel="canonical" href={company.siteUrl} />
-        <meta property="og:type" content="website" />
-        <meta property="og:locale" content="es_PE" />
-        <meta property="og:site_name" content={company.name} />
-        <meta property="og:title" content="FindTec Soluciones | Tecnología que impulsa resultados" />
-        <meta property="og:description" content={company.description} />
-        <meta property="og:image" content={`${company.siteUrl}/images/hero-tech.jpg`} />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="FindTec Soluciones | Servicios TI empresariales" />
-        <meta name="twitter:description" content={company.description} />
-        <meta name="twitter:image" content={`${company.siteUrl}/images/hero-tech.jpg`} />
-        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/apple-icon.png" />
-      </head>
-      <body className="font-sans antialiased bg-background">
+    <html
+      lang="es"
+      className={`${outfit.variable} ${plusJakarta.variable} ${jetbrainsMono.variable} antialiased`}
+      suppressHydrationWarning
+    >
+      <body className="min-h-screen bg-background font-sans text-foreground selection:bg-blue-600/20 selection:text-blue-500">
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
-          enableSystem
+          defaultTheme="dark"
+          enableSystem={false}
+          storageKey="findtec-theme"
           disableTransitionOnChange
         >
-          {children}
+          <SiteFrame>{children}</SiteFrame>
+
+          {/* Notificaciones estilo Emil Kowalski con bordes impecables */}
+          <Toaster
+            position="bottom-right"
+            richColors
+            closeButton
+            toastOptions={{
+              className:
+                "border border-black/[0.08] dark:border-white/[0.1] shadow-2xl backdrop-blur-xl bg-background/90 text-foreground",
+            }}
+          />
         </ThemeProvider>
       </body>
     </html>

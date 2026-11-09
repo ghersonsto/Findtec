@@ -1,73 +1,67 @@
 "use client";
 
-import { Award, Clock, Headphones, Shield, TrendingUp, Zap } from "lucide-react";
+import { Award, Clock, Shield, Zap } from "lucide-react";
+
+import { Reveal } from "@/components/reveal";
 
 const features = [
   {
     icon: Zap,
-    title: "Rápida implementación",
-    description: "Desplegamos soluciones tecnológicas en tiempos cortos sin comprometer la calidad.",
+    title: "Implementación ágil",
+    description: "Desplegamos software e infraestructura con alcance documentado.",
   },
   {
     icon: Shield,
     title: "Seguridad aplicada",
-    description: "Controles y buenas prácticas para proteger información, accesos y continuidad.",
+    description: "Controles de acceso, respaldos y buenas prácticas operativas.",
   },
   {
     icon: Clock,
-    title: "Disponibilidad 24/7",
-    description: "Soporte técnico disponible para resolver incidencias críticas.",
-  },
-  {
-    icon: Headphones,
-    title: "Atención personalizada",
-    description: "Cada cliente recibe una solución adaptada a sus necesidades reales.",
+    title: "Soporte continuo",
+    description: "Acompañamiento postentrega para incidencias y evolución.",
   },
   {
     icon: Award,
-    title: "Procesos documentados",
-    description: "Entregables claros, evidencia técnica y seguimiento profesional.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Escalabilidad",
-    description: "Soluciones que crecen junto con la empresa sin frenar la operación.",
+    title: "Entregables claros",
+    description: "Documentación, evidencia técnica y seguimiento profesional.",
   },
 ];
 
 export function FeaturesSection() {
   return (
-    <section className="relative overflow-hidden py-16 sm:py-20">
-      <div className="absolute inset-0 bg-gradient-to-b from-background via-card/20 to-background" />
+    <section className="section-pad relative overflow-hidden">
+      <div className="absolute inset-0 bg-background" />
 
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary">
-            Por qué elegirnos
-          </span>
-          <h2 className="mt-6 text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-            Ventajas de trabajar con <span className="text-gradient">FindTec</span>
+      <div className="container-pro relative">
+        <Reveal className="mx-auto max-w-2xl text-center">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">
+            Por qué Findtec
+          </p>
+          <h2 className="font-display mt-4 text-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+            Ventajas de digitalizar con nosotros
           </h2>
-        </div>
+        </Reveal>
 
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {features.map((feature) => (
-            <div
+        <div className="mt-10 grid gap-4 sm:mt-14 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
+          {features.map((feature, index) => (
+            <Reveal
               key={feature.title}
-              className="group relative rounded-lg border border-border/70 bg-card/70 p-8 transition-all duration-500 hover:border-primary/30 hover:bg-secondary/60"
+              delayClass={
+                index % 2 === 1 ? "delay-100" : index % 4 === 2 ? "delay-200" : undefined
+              }
             >
-              <div className="relative">
-                <div className="flex h-14 w-14 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 transition-all duration-300 group-hover:bg-primary/20">
-                  <feature.icon className="h-7 w-7 text-primary" />
+              <article className="h-full rounded-2xl border border-border bg-card/60 p-5 transition hover:border-primary/35 sm:p-6">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-primary/20 bg-primary/10">
+                  <feature.icon className="h-5 w-5 text-primary" />
                 </div>
-
-                <h3 className="mt-6 text-xl font-semibold text-foreground">{feature.title}</h3>
-
-                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                <h3 className="font-display mt-5 text-lg font-bold text-foreground">
+                  {feature.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                   {feature.description}
                 </p>
-              </div>
-            </div>
+              </article>
+            </Reveal>
           ))}
         </div>
       </div>

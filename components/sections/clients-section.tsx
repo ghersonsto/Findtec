@@ -1,45 +1,47 @@
 "use client";
 
-const clients = [
-  "Microsoft",
-  "HP",
-  "Dell",
-  "Lenovo",
-  "Intel",
-  "ASUS",
-  "Cisco",
-  "VMware",
-];
+import { BrandIcon, TECH_BRANDS } from "@/components/tech-brand-icons";
 
 export function ClientsSection() {
+  const loop = [...TECH_BRANDS, ...TECH_BRANDS];
+
   return (
-    <section className="relative overflow-hidden border-y border-border py-10">
-      <div className="absolute inset-0 bg-gradient-to-r from-background via-card/50 to-background" />
-      
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <p className="mb-6 text-center text-sm font-medium uppercase tracking-widest text-muted-foreground">
-          Trabajamos con las mejores marcas
-        </p>
-        
-        {/* Marquee container */}
-        <div className="relative flex overflow-hidden">
-          {/* Gradient fade left */}
-          <div className="absolute left-0 top-0 z-10 h-full w-32 bg-gradient-to-r from-background to-transparent" />
-          {/* Gradient fade right */}
-          <div className="absolute right-0 top-0 z-10 h-full w-32 bg-gradient-to-l from-background to-transparent" />
-          
-          <div className="animate-marquee flex items-center gap-16">
-            {[...clients, ...clients].map((client, index) => (
-              <div
-                key={index}
-                className="flex h-16 shrink-0 items-center justify-center px-4"
-              >
-                <span className="whitespace-nowrap text-2xl font-bold text-muted-foreground/40 transition-colors hover:text-muted-foreground">
-                  {client}
-                </span>
-              </div>
-            ))}
-          </div>
+    <section
+      className="section-shell relative overflow-hidden border-y border-transparent py-4 dark:border-white/[0.03] sm:py-5"
+      aria-labelledby="tech-heading"
+    >
+      <div className="container-pro relative mb-3 text-center sm:mb-4">
+        <h2
+          id="tech-heading"
+          className="font-mono text-[11px] font-semibold uppercase tracking-[0.22em] text-primary"
+        >
+          Tecnologías que utilizamos
+        </h2>
+      </div>
+
+      <div className="relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
+        <div className="marquee-track flex w-max items-center gap-3 px-3 animate-marquee motion-reduce:mx-auto motion-reduce:w-auto motion-reduce:max-w-5xl motion-reduce:flex-wrap motion-reduce:justify-center motion-reduce:gap-2 motion-reduce:animate-none">
+          {loop.map((tech, index) => (
+            <div
+              key={`${tech.slug}-${index}`}
+              aria-hidden={index >= TECH_BRANDS.length ? true : undefined}
+              className={`group flex shrink-0 select-none items-center gap-2.5 rounded-full border border-border/60 bg-card/70 px-3.5 py-2 shadow-sm backdrop-blur-sm transition-colors hover:border-primary/35 dark:border-white/[0.06] dark:bg-white/[0.03] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] ${
+                index >= TECH_BRANDS.length ? "motion-reduce:hidden" : ""
+              }`}
+            >
+              <span className="flex size-7 items-center justify-center rounded-lg bg-background/80 dark:bg-black/30">
+                <BrandIcon
+                  slug={tech.slug}
+                  color={tech.color}
+                  name={tech.name}
+                  microsoft={tech.microsoft}
+                />
+              </span>
+              <span className="font-mono text-xs font-medium text-muted-foreground transition-colors group-hover:text-foreground sm:text-[13px]">
+                {tech.name}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </section>

@@ -1,0 +1,20 @@
+# Findtec Design Engineering Rules (Kowalski + Impeccable + Taste)
+
+Eres un Design Engineer Senior enfocado en interfaces B2B de alta conversión y pulido extremo.
+
+## 1. Taste-Skill & Estética B2B Corporativa
+- **Color y Luz:** El color acento es Electric Blue (`#2563eb` / `#3b82f6`). Prohibido saturar con gradientes estridentes. La interfaz debe comunicar solidez técnica, no estilo "crypto/startup juvenil".
+- **Superficies y Elevación:** 
+  - En Dark Mode: Fondo principal `bg-zinc-950`. Tarjetas `bg-zinc-900/60` con `backdrop-blur-md`.
+  - Bordes Impecables: Prohibido usar `border-zinc-700` plano. Usa bordes ultra finos translúcidos: `border-white/[0.08]` combinado con `shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]` para simular bisel de luz superior.
+  - En Light Mode: Usa `border-black/[0.06]` con sombra de contacto doble: `shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_rgba(0,0,0,0.02)]`.
+- **Tipografía:** Títulos en font Outfit (`font-display`) con `tracking-tight`. Textos de lectura en Plus Jakarta Sans con `leading-relaxed` y contraste calibrado (`text-zinc-600 dark:text-zinc-400`).
+
+## 2. Metodología Emil Kowalski (Motion & Microinteracciones)
+- Prohibido usar transiciones lineales CSS o `ease-in-out` estándar para clicks y gestos.
+- Usa resortes (*springs*):
+  - Micro-taps (botones, badges, tarjetas interactivas): `stiffness: 400`, `damping: 28`, `mass: 0.8`.
+  - Despliegue de paneles/menús/acordeones: `stiffness: 320`, `damping: 32`.
+- Todo botón primario o secundario DEBE tener retroalimentación física: `whileTap={{ scale: 0.98 }}` o en CSS `active:scale-[0.98]`.
+- Notificaciones: Si se usan toasts, estandarizar con Sonner con stacking y amortiguación fluida.
+- Respetar siempre `prefers-reduced-motion: reduce`.

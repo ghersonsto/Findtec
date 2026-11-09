@@ -1,70 +1,84 @@
-import { Navbar } from "@/components/navbar";
-import { SmartChatbot } from "@/components/smart-chatbot";
-import { AboutSection } from "@/components/sections/about-section";
-import { B2GSection } from "@/components/sections/b2g-section";
-import { ClientsSection } from "@/components/sections/clients-section";
-import { ContactSection } from "@/components/sections/contact-section";
-import { DecisionSection } from "@/components/sections/decision-section";
-import { FeaturesSection } from "@/components/sections/features-section";
-import { Footer } from "@/components/sections/footer";
+import type { Metadata } from "next";
+import dynamic from "next/dynamic";
+
 import { HeroSection } from "@/components/sections/hero-section";
-import { ProcessSection } from "@/components/sections/process-section";
-import { ServicesSection } from "@/components/sections/services-section";
-import { TestimonialsSection } from "@/components/sections/testimonials-section";
-import { TrustSection } from "@/components/sections/trust-section";
-import { company } from "@/lib/company";
+import { ClientsSection } from "@/components/sections/clients-section";
+import { company, serviceOptions } from "@/lib/company";
+
+/** Secciones bajo el fold: no bloquean el primer paint del Hero. */
+const HomeServices = dynamic(
+  () => import("@/components/sections/home-services").then((m) => m.HomeServices),
+  { loading: () => <SectionSkeleton className="min-h-[28rem]" /> },
+);
+const ProjectsCarousel = dynamic(
+  () =>
+    import("@/components/sections/projects-carousel").then((m) => m.ProjectsCarousel),
+  { loading: () => <SectionSkeleton className="min-h-[32rem]" /> },
+);
+const WhyUsSection = dynamic(
+  () => import("@/components/sections/why-us-section").then((m) => m.WhyUsSection),
+  { loading: () => <SectionSkeleton className="min-h-[24rem]" /> },
+);
+const TrustSection = dynamic(
+  () => import("@/components/sections/trust-section").then((m) => m.TrustSection),
+  { loading: () => <SectionSkeleton className="min-h-[24rem]" /> },
+);
+const CtaSection = dynamic(
+  () => import("@/components/sections/cta-section").then((m) => m.CtaSection),
+  { loading: () => <SectionSkeleton className="min-h-[28rem]" /> },
+);
+
+function SectionSkeleton({ className }: { className?: string }) {
+  return (
+    <div
+      className={`w-full animate-pulse bg-transparent ${className ?? ""}`}
+      aria-hidden
+    />
+  );
+}
+
+export const metadata: Metadata = {
+  title: { absolute: "Findtec Soluciones" },
+  description: company.description,
+};
 
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
   name: company.name,
   legalName: company.legalName,
+  taxID: company.ruc,
   url: company.siteUrl,
-  image: `${company.siteUrl}/images/hero-tech.jpg`,
+  image: new URL(company.logo.dark, company.siteUrl).href,
+  logo: new URL(company.logo.dark, company.siteUrl).href,
   description: company.description,
   email: company.email,
   telephone: company.phone,
-  address: {
-    "@type": "PostalAddress",
-    streetAddress: "Av. Miramar Lte. 1 URB 15058",
-    addressLocality: "Lima",
-    addressCountry: "PE",
-  },
-  areaServed: ["Perú", "Lima"],
-  priceRange: "$$",
-  makesOffer: [
-    "Hardware empresarial",
-    "Soporte técnico",
-    "Microsoft 365",
-    "Redes e infraestructura",
-    "Desarrollo web",
-    "Análisis de datos",
-  ],
+  address: company.address,
+  makesOffer: serviceOptions
+    .filter(({ value }) => value !== "otro")
+    .map(({ label }) => ({
+      "@type": "Offer",
+      itemOffered: { "@type": "Service", name: label },
+    })),
 };
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background">
+    <main className="bg-transparent text-foreground selection:bg-primary/25 selection:text-primary">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}
       />
-      <Navbar />
-      <main>
-        <HeroSection />
+      <HeroSection />
+      <div className="post-hero-surface">
         <ClientsSection />
+        <HomeServices />
+        <ProjectsCarousel />
+        <WhyUsSection />
         <TrustSection />
-        <ServicesSection />
-        <ProcessSection />
-        <AboutSection />
-        <FeaturesSection />
-        <B2GSection />
-        <DecisionSection />
-        <TestimonialsSection />
-        <ContactSection />
-      </main>
-      <Footer />
-      <SmartChatbot />
-    </div>
+        <CtaSection />
+      </div>
+    </main>
   );
 }

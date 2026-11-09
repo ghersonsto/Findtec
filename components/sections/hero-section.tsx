@@ -1,207 +1,392 @@
 "use client";
 
-import { ArrowRight, ArrowUpRight, Bot, CheckCircle2, Play, ShieldCheck } from "lucide-react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import {
+  ArrowRight,
+  Code2,
+  Server,
+  Sparkles,
+} from "lucide-react";
+import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "motion/react";
+import { useCallback, useEffect, useState, type MouseEvent } from "react";
 
-const heroFrames = [
-  {
-    image: "/images/hero-tech.jpg",
-    title: "Infraestructura TI",
-    label: "Diagnóstico y despliegue",
-  },
-  {
-    image: "/images/hardware.jpg",
-    title: "Hardware empresarial",
-    label: "Equipos listos para operar",
-  },
-  {
-    image: "/images/cloud.jpg",
-    title: "Cloud y Microsoft 365",
-    label: "Productividad segura",
-  },
-  {
-    image: "/images/team.jpg",
-    title: "Soporte cercano",
-    label: "Atención B2B y B2G",
-  },
-];
+import { SectionAnchor } from "@/components/section-anchor";
+import { WhatsAppBadge } from "@/components/whatsapp-icon";
+import { useDesign } from "@/hooks/use-design";
+import { company, whatsappHref } from "@/lib/company";
+import { startQuote } from "@/lib/quote";
 
-const confidencePoints = [
-  "Cotización clara",
-  "Alcance documentado",
-  "Soporte posterior",
-];
+const Hero3DEcosystem = dynamic(
+  () => import("@/components/hero-3d-ecosystem").then((m) => m.Hero3DEcosystem),
+  { ssr: false, loading: () => null },
+);
+
+/** Ventana tipo Flash Devs (chrome + imagen). */
+function HeroWindow({
+  src,
+  alt,
+  className,
+  imgClassName,
+  priority,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  imgClassName?: string;
+  priority?: boolean;
+}) {
+  return (
+    <div
+      className={`overflow-hidden rounded-xl border border-white/10 bg-[#0b1222] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.9)] ${className ?? ""}`}
+    >
+      <div className="flex items-center gap-1.5 border-b border-white/10 bg-white/[0.03] px-3 py-2">
+        <span className="size-2.5 rounded-full bg-[#ff5f57]" />
+        <span className="size-2.5 rounded-full bg-[#febc2e]" />
+        <span className="size-2.5 rounded-full bg-[#28c840]" />
+        <span className="ml-3 h-4 flex-1 rounded bg-white/5" />
+      </div>
+      <div className="relative aspect-[16/10] w-full overflow-hidden">
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          sizes="(max-width: 1024px) 70vw, 440px"
+          priority={priority}
+          className={`object-cover ${imgClassName ?? "object-top"}`}
+        />
+      </div>
+    </div>
+  );
+}
+
+const HERO_TAGS = [
+  {
+    icon: Server,
+    label: "Infraestructura",
+    /** Parte superior + centro de la ventana trasera */
+    pos: "top-[-22%] left-[40%]",
+    z: 140,
+    center: true,
+    float: { y: 10, duration: 7, delay: 0 },
+  },
+  {
+    icon: Code2,
+    label: "Software",
+    pos: "top-[14%] right-[6%]",
+    z: 160,
+    center: false,
+    float: { y: 14, duration: 6, delay: 0.5 },
+  },
+  {
+    icon: Sparkles,
+    label: "IA",
+    pos: "bottom-[8%] left-[48%]",
+    z: 150,
+    center: false,
+    float: { y: 8, duration: 5, delay: 1 },
+  },
+] as const;
+
+const SHOW_HERO_STACK = true;
 
 export function HeroSection() {
-  const [activeFrame, setActiveFrame] = useState(0);
+  const reduceMotion = useReducedMotion();
+  const { design } = useDesign();
+  const [sceneReady, setSceneReady] = useState(false);
+  const [sceneFailed, setSceneFailed] = useState(false);
+  const [allowWebGL, setAllowWebGL] = useState(false);
+  /** Diferir Three.js hasta idle para no competir con LCP del Hero. */
+  const [loadScene, setLoadScene] = useState(false);
 
   useEffect(() => {
-    const interval = window.setInterval(() => {
-      setActiveFrame((current) => (current + 1) % heroFrames.length);
-    }, 3200);
-
-    return () => window.clearInterval(interval);
+    const mq = window.matchMedia("(min-width: 1024px) and (prefers-reduced-motion: no-preference)");
+    const sync = () => setAllowWebGL(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
   }, []);
 
-  const openChatbot = () => {
-    window.dispatchEvent(new Event("open-findtec-chatbot"));
+  useEffect(() => {
+    if (!allowWebGL) {
+      setLoadScene(false);
+      return;
+    }
+    let cancelled = false;
+    const start = () => {
+      if (!cancelled) setLoadScene(true);
+    };
+    let idleId: number | undefined;
+    let timeoutId: number | undefined;
+    if (typeof window.requestIdleCallback === "function") {
+      idleId = window.requestIdleCallback(start, { timeout: 1600 });
+    } else {
+      timeoutId = window.setTimeout(start, 500);
+    }
+    return () => {
+      cancelled = true;
+      if (idleId !== undefined && typeof window.cancelIdleCallback === "function") {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+    };
+  }, [allowWebGL]);
+
+  const mx = useMotionValue(0);
+  const my = useMotionValue(0);
+  const sx = useSpring(mx, { stiffness: 140, damping: 22, mass: 0.55 });
+  const sy = useSpring(my, { stiffness: 140, damping: 22, mass: 0.55 });
+  // Tilt original del día (antes de ajustes Flash)
+  const rotateY = useTransform(sx, [-0.5, 0.5], [22, -22]);
+  const rotateX = useTransform(sy, [-0.5, 0.5], [-10, 10]);
+
+  const onPointerMove = useCallback(
+    (event: MouseEvent<HTMLDivElement>) => {
+      if (reduceMotion) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      mx.set((event.clientX - rect.left) / rect.width - 0.5);
+      my.set((event.clientY - rect.top) / rect.height - 0.5);
+    },
+    [mx, my, reduceMotion],
+  );
+
+  const onPointerLeave = useCallback(() => {
+    mx.set(0);
+    my.set(0);
+  }, [mx, my]);
+
+  const onQuote = () => {
+    startQuote({
+      servicio: "software-gestion",
+      label: "Cotización Findtec",
+      mensaje: `Hola, deseo solicitar una cotización personalizada para mi empresa con ${company.name}.`,
+    });
   };
 
   return (
-    <section id="inicio" className="relative min-h-[88vh] overflow-hidden noise">
-      <div className="absolute inset-0 gradient-mesh" />
-      <div className="absolute inset-0 grid-pattern opacity-40" />
-
-      <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="flex flex-col gap-4 pt-24 pb-8 sm:flex-row sm:items-center sm:justify-between sm:pt-28 sm:pb-10">
-          <div className="flex items-center gap-4">
-            <div className="h-px w-12 bg-gradient-to-r from-primary to-transparent" />
-            <span className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              FindTec Soluciones
-            </span>
-          </div>
-          <div className="hidden items-center gap-3 rounded-full border border-border bg-card/70 px-4 py-2 md:flex">
-            <ShieldCheck className="h-4 w-4 text-primary" />
-            <span className="text-xs font-medium text-muted-foreground">
-              RNP vigente y atención B2B/B2G
-            </span>
-          </div>
+    <section
+      id="inicio"
+      className="relative flex min-h-0 w-full items-center overflow-hidden bg-transparent pt-[5.25rem] pb-8 text-foreground sm:min-h-[90vh] sm:pt-28 sm:pb-12 lg:pt-28 lg:pb-16"
+    >
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden>
+        <div
+          className="aurora-glow absolute -top-[12%] left-[8%] h-[460px] w-[520px] opacity-80"
+          style={{ background: `radial-gradient(circle, ${design.brand.cyan}55, transparent 70%)` }}
+        />
+        <div className="aurora-glow absolute -top-[8%] right-[6%] h-[540px] w-[600px]" />
+        <div className="absolute bottom-0 left-1/2 h-[48%] w-[140%] -translate-x-1/2 [perspective:900px]">
+          <div className="h-full w-full origin-bottom scale-y-[1.45] bg-[linear-gradient(to_right,rgba(37,99,235,0.16)_1px,transparent_1px),linear-gradient(to_bottom,rgba(37,99,235,0.12)_1px,transparent_1px)] bg-[size:44px_44px] [mask-image:linear-gradient(to_top,black_10%,transparent_78%)] [transform:rotateX(64deg)] dark:bg-[linear-gradient(to_right,rgba(56,189,248,0.2)_1px,transparent_1px),linear-gradient(to_bottom,rgba(56,189,248,0.14)_1px,transparent_1px)]" />
         </div>
+        <div className="hero-floor-glow" />
+        {allowWebGL && loadScene && !sceneFailed ? (
+          <div
+            className={`absolute top-[6%] bottom-[18%] left-1/2 w-[min(72vw,760px)] -translate-x-1/2 transition-opacity duration-1000 ${
+              sceneReady ? "opacity-[0.4] dark:opacity-[0.52]" : "opacity-0"
+            }`}
+          >
+            <Hero3DEcosystem
+              onReady={() => setSceneReady(true)}
+              onFailure={() => setSceneFailed(true)}
+            />
+          </div>
+        ) : null}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/35 via-transparent to-transparent" />
+        {/* Fundido al abyss compartido — más largo, sin barra opaca */}
+        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-background from-[5%] via-background/35 to-transparent sm:h-56" />
+      </div>
 
-        <div className="grid items-center gap-10 pb-16 lg:grid-cols-2 lg:gap-16">
-          <div className="space-y-8">
-            <div className="space-y-5">
-              <h1 className="max-w-4xl text-4xl font-bold leading-[0.96] tracking-tight sm:text-5xl lg:text-6xl xl:text-7xl">
-                <span className="text-gradient-subtle">Soluciones TI</span>
-                <br />
-                <span className="text-foreground">para trabajar</span>
-                <br />
-                <span className="text-primary">con confianza</span>
-              </h1>
-
-              <p className="max-w-xl text-lg leading-relaxed text-muted-foreground">
-                FindTec Soluciones implementa hardware, soporte, Microsoft 365,
-                redes, automatización, datos y desarrollo web con diagnóstico,
-                documentación y acompañamiento posterior.
-              </p>
+      <div className="container-pro relative z-10 w-full">
+        <div className="grid items-center gap-6 sm:gap-8 lg:grid-cols-12 lg:gap-4">
+          <motion.div
+            initial={reduceMotion ? false : { opacity: 0, y: 28 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 320, damping: 32 }}
+            className={
+              SHOW_HERO_STACK
+                ? "relative z-20 max-w-xl lg:col-span-5"
+                : "relative z-20 max-w-2xl lg:col-span-8"
+            }
+          >
+            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/80 px-3 py-1.5 text-[11px] font-semibold tracking-wide text-foreground shadow-sm backdrop-blur-md dark:border-white/[0.08] dark:bg-white/[0.04]">
+              <span className="size-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(37,99,235,0.8)]" />
+              FINDTEC SOLUCIONES
             </div>
 
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <button
+            <h1 className="mt-4 font-display text-balance text-[clamp(1.85rem,7.2vw,2.35rem)] font-extrabold leading-[1.05] tracking-tight text-foreground sm:mt-5 sm:text-5xl lg:text-[3.55rem]">
+              Ingeniería digital para{" "}
+              <span className="bg-gradient-to-r from-sky-400 to-primary bg-clip-text text-transparent">
+                operar con control
+              </span>
+            </h1>
+
+            <p className="mt-3.5 max-w-[28rem] font-sans text-sm leading-relaxed text-muted-foreground sm:mt-5 sm:text-[1.05rem]">
+              Software de gestión, tiendas, plataformas a medida e infraestructura TI para empresas e
+              instituciones en Perú.
+            </p>
+
+            <div className="mt-6 flex w-full flex-col gap-2.5 sm:mt-8 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+              <motion.button
                 type="button"
-                onClick={openChatbot}
-                className="btn-primary group inline-flex h-14 items-center justify-center gap-3 rounded-full px-8 text-base font-semibold text-white"
+                onClick={onQuote}
+                whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 400, damping: 28, mass: 0.8 }}
+                className="group btn-primary inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 text-sm font-semibold text-white active:scale-[0.98] sm:w-auto"
               >
-                Cotizar con asistente
-                <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-              </button>
-              <a
-                href="#contacto"
-                className="btn-outline inline-flex h-14 items-center justify-center gap-3 rounded-full px-8 text-base font-medium text-foreground"
+                <span>Solicitar cotización</span>
+                <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+              </motion.button>
+
+              <motion.a
+                href={whatsappHref(
+                  "Hola Findtec, deseo solicitar información y una cotización para mi empresa.",
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 400, damping: 28, mass: 0.8 }}
+                className="inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-[#25D366]/45 bg-[#25D366]/10 px-5 text-sm font-semibold text-foreground backdrop-blur-md transition-colors hover:bg-[#25D366]/16 active:scale-[0.98] dark:bg-[#25D366]/12 sm:w-auto"
               >
-                Formulario
-                <Bot className="h-5 w-5" />
-              </a>
-              <a
-                href="#servicios"
-                className="btn-outline inline-flex h-14 items-center justify-center gap-3 rounded-full px-8 text-base font-medium text-foreground"
-              >
-                Ver servicios
-                <ArrowUpRight className="h-5 w-5" />
-              </a>
+                <WhatsAppBadge />
+                <span>Escríbenos por WhatsApp</span>
+              </motion.a>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 border-t border-border pt-6 sm:flex sm:items-center sm:gap-10">
-              <div>
-                <div className="text-3xl font-bold text-foreground sm:text-4xl">100+</div>
-                <div className="mt-1 text-sm text-muted-foreground">Clientes</div>
-              </div>
-              <div className="hidden h-12 w-px bg-border sm:block" />
-              <div>
-                <div className="text-3xl font-bold text-foreground sm:text-4xl">B2G</div>
-                <div className="mt-1 text-sm text-muted-foreground">Experiencia</div>
-              </div>
-              <div className="hidden h-12 w-px bg-border sm:block" />
-              <div>
-                <div className="text-3xl font-bold text-foreground sm:text-4xl">24/7</div>
-                <div className="mt-1 text-sm text-muted-foreground">Soporte</div>
-              </div>
+            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:mt-5">
+              <p className="text-[11px] leading-snug text-muted-foreground sm:text-[12px]">
+                Cotización personalizada y sin compromiso · Respuesta en menos de 24 h
+              </p>
+              <SectionAnchor
+                id="proyectos"
+                className="min-h-11 inline-flex items-center text-[12px] font-medium text-foreground underline underline-offset-4 transition-colors hover:text-primary sm:min-h-0"
+              >
+                Ver proyectos
+              </SectionAnchor>
             </div>
+          </motion.div>
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              {confidencePoints.map((point) => (
+          {/* Stack 3D — temporalmente oculto (SHOW_HERO_STACK) */}
+          {SHOW_HERO_STACK ? (
+            <motion.div
+              className="relative mx-auto w-full max-w-[min(100%,340px)] sm:max-w-[440px] lg:col-span-7 lg:ml-auto lg:mr-0 lg:max-w-[500px]"
+              style={{ perspective: 1600 }}
+              onMouseMove={onPointerMove}
+              onMouseLeave={onPointerLeave}
+              initial={reduceMotion ? false : { opacity: 0, scale: 0.9, y: 40 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 1.1, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <motion.div
+                className="relative aspect-[16/11] [transform-style:preserve-3d]"
+                style={
+                  reduceMotion
+                    ? { rotateY: -18, rotateX: 8 }
+                    : { rotateX, rotateY }
+                }
+              >
                 <div
-                  key={point}
-                  className="flex items-center gap-2 rounded-lg border border-border bg-card/70 px-3 py-3 text-sm font-semibold text-foreground"
-                >
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                  {point}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="relative">
-            <div className="relative aspect-[16/11] overflow-hidden rounded-lg border border-border bg-card shadow-2xl shadow-primary/10 lg:aspect-[4/5]">
-              {heroFrames.map((frame, index) => (
-                <Image
-                  key={frame.image}
-                  src={frame.image}
-                  alt={frame.title}
-                  fill
-                  priority={index === 0}
-                  className={`object-cover transition-all duration-1000 ${
-                    activeFrame === index ? "scale-100 opacity-100" : "scale-105 opacity-0"
-                  }`}
+                  aria-hidden
+                  className="absolute inset-[10%] rounded-3xl bg-primary/25 blur-3xl"
+                  style={{ transform: "translateZ(-100px)" }}
                 />
-              ))}
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
-              <div className="absolute left-5 top-5 flex items-center gap-2 rounded-full border border-white/20 bg-black/35 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-md">
-                <Play className="h-3.5 w-3.5 fill-white" />
-                Reel tecnológico
-              </div>
 
-              <div className="absolute bottom-5 left-5 right-5 rounded-lg border border-white/15 bg-black/35 p-4 text-white backdrop-blur-md sm:p-5">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/65">
-                      {heroFrames[activeFrame].label}
-                    </p>
-                    <h2 className="mt-2 text-2xl font-bold">{heroFrames[activeFrame].title}</h2>
-                  </div>
-                  <div className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-white/15 sm:flex">
-                    <Bot className="h-6 w-6" />
-                  </div>
-                </div>
-                <div className="mt-4 grid grid-cols-4 gap-2">
-                  {heroFrames.map((frame, index) => (
-                    <button
-                      key={frame.title}
-                      type="button"
-                      onClick={() => setActiveFrame(index)}
-                      className={`h-1.5 rounded-full transition ${
-                        activeFrame === index ? "bg-white" : "bg-white/25 hover:bg-white/50"
-                      }`}
-                      aria-label={`Ver ${frame.title}`}
+                <div
+                  className="absolute left-[4%] top-[-28%] w-[72%]"
+                  style={{ transform: "translateZ(-50px)" }}
+                >
+                  <motion.div
+                    animate={reduceMotion ? undefined : { y: [0, -10, 0] }}
+                    transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <HeroWindow
+                      src="/images/findtec-service-cloud.webp"
+                      alt="Cloud e infraestructura Findtec"
+                      className="opacity-90"
+                      priority
                     />
-                  ))}
+                  </motion.div>
                 </div>
-              </div>
-            </div>
 
-            <div className="glass-strong absolute -left-3 top-6 hidden rounded-lg p-4 sm:block lg:-left-8 lg:top-1/3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20">
-                  <div className="h-3 w-3 rounded-full bg-green-500" />
+                <div
+                  className="absolute right-[2%] top-[14%] w-[74%]"
+                  style={{ transform: "translateZ(40px)" }}
+                >
+                  <motion.div
+                    animate={reduceMotion ? undefined : { y: [0, -14, 0] }}
+                    transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                  >
+                    <HeroWindow
+                      src="/images/findtec-service-erp.webp"
+                      alt="Software de gestión Findtec"
+                      imgClassName="object-[center_72%]"
+                      priority
+                    />
+                  </motion.div>
                 </div>
-                <div>
-                  <div className="text-sm font-medium text-foreground">En línea</div>
-                  <div className="text-xs text-muted-foreground">Asesoría activa</div>
+
+                <div
+                  className="absolute bottom-[2%] left-[14%] w-[42%]"
+                  style={{ transform: "translateZ(110px)" }}
+                >
+                  <motion.div
+                    animate={reduceMotion ? undefined : { y: [0, -8, 0] }}
+                    transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                  >
+                    <HeroWindow
+                      src="/images/findtec-service-ia.webp"
+                      alt="Integraciones con IA Findtec"
+                    />
+                  </motion.div>
                 </div>
-              </div>
-            </div>
-          </div>
+
+                {HERO_TAGS.map((tag, i) => {
+                  const Icon = tag.icon;
+                  return (
+                    <div
+                      key={tag.label}
+                      className={`absolute hidden sm:block ${tag.pos}`}
+                      style={{
+                        transform: tag.center
+                          ? `translate3d(-50%, 0, ${tag.z}px)`
+                          : `translateZ(${tag.z}px)`,
+                      }}
+                    >
+                      <motion.div
+                        animate={
+                          reduceMotion
+                            ? undefined
+                            : { y: [0, -tag.float.y, 0] }
+                        }
+                        transition={{
+                          duration: tag.float.duration,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                          delay: tag.float.delay,
+                        }}
+                      >
+                        <motion.div
+                          aria-hidden
+                          initial={reduceMotion ? false : { opacity: 0, scale: 0.6 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{
+                            delay: reduceMotion ? 0 : 1 + i * 0.12,
+                            type: "spring",
+                            stiffness: 200,
+                            damping: 16,
+                          }}
+                          className="flex items-center gap-2 whitespace-nowrap rounded-xl border border-black/[0.08] bg-white/95 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-800 shadow-[0_12px_28px_-12px_rgba(15,23,42,0.35)] backdrop-blur-md dark:border-white/10 dark:bg-[#0b1222]/92 dark:text-zinc-100 dark:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.9)]"
+                        >
+                          <span className="flex size-5 items-center justify-center rounded-md bg-primary/15 text-primary dark:bg-primary/20 dark:text-sky-300">
+                            <Icon className="size-3" />
+                          </span>
+                          {tag.label}
+                        </motion.div>
+                      </motion.div>
+                    </div>
+                  );
+                })}
+              </motion.div>
+            </motion.div>
+          ) : null}
         </div>
       </div>
     </section>
