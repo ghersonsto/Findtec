@@ -13,9 +13,11 @@ import { useCallback, useEffect, useState, type MouseEvent } from "react";
 
 import { SectionAnchor } from "@/components/section-anchor";
 import { WhatsAppBadge } from "@/components/whatsapp-icon";
-import { useDesign } from "@/hooks/use-design";
 import { company, whatsappHref } from "@/lib/company";
 import { startQuote } from "@/lib/quote";
+
+/** Token brand local — evita fetch /api/design en el critical path del Hero. */
+const HERO_CYAN = "#38bdf8";
 
 const Hero3DEcosystem = dynamic(
   () => import("@/components/hero-3d-ecosystem").then((m) => m.Hero3DEcosystem),
@@ -47,14 +49,28 @@ function HeroWindow({
         <span className="ml-3 h-4 flex-1 rounded bg-white/5" />
       </div>
       <div className="relative aspect-[16/10] w-full overflow-hidden">
-        <Image
-          src={src}
-          alt={alt}
-          fill
-          sizes="(max-width: 1024px) 70vw, 440px"
-          priority={priority}
-          className={`object-cover ${imgClassName ?? "object-top"}`}
-        />
+        {priority ? (
+          // LCP: WebP estático con fetchPriority — evita cola de /_next/image en 1ª visita
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={src}
+            alt={alt}
+            width={880}
+            height={550}
+            fetchPriority="high"
+            decoding="async"
+            className={`h-full w-full object-cover ${imgClassName ?? "object-top"}`}
+          />
+        ) : (
+          <Image
+            src={src}
+            alt={alt}
+            fill
+            sizes="(max-width: 640px) 68vw, (max-width: 1024px) 50vw, 440px"
+            loading="lazy"
+            className={`object-cover ${imgClassName ?? "object-top"}`}
+          />
+        )}
       </div>
     </div>
   );
@@ -65,7 +81,7 @@ const HERO_TAGS = [
     icon: Server,
     label: "Infraestructura",
     /** Parte superior + centro de la ventana trasera */
-    pos: "top-[-22%] left-[40%]",
+    pos: "top-[-6%] left-[40%] sm:top-[-12%] lg:top-[-22%]",
     z: 140,
     center: true,
     float: { y: 10, duration: 7, delay: 0 },
@@ -73,7 +89,7 @@ const HERO_TAGS = [
   {
     icon: Code2,
     label: "Software",
-    pos: "top-[14%] right-[6%]",
+    pos: "top-[12%] right-[4%] sm:top-[14%] sm:right-[6%]",
     z: 160,
     center: false,
     float: { y: 14, duration: 6, delay: 0.5 },
@@ -81,7 +97,7 @@ const HERO_TAGS = [
   {
     icon: Sparkles,
     label: "IA",
-    pos: "bottom-[8%] left-[48%]",
+    pos: "bottom-[4%] left-[44%] sm:bottom-[8%] sm:left-[48%]",
     z: 150,
     center: false,
     float: { y: 8, duration: 5, delay: 1 },
@@ -92,11 +108,10 @@ const SHOW_HERO_STACK = true;
 
 export function HeroSection() {
   const reduceMotion = useReducedMotion();
-  const { design } = useDesign();
   const [sceneReady, setSceneReady] = useState(false);
   const [sceneFailed, setSceneFailed] = useState(false);
   const [allowWebGL, setAllowWebGL] = useState(false);
-  /** Diferir Three.js hasta idle para no competir con LCP del Hero. */
+  /** Diferir Three.js hasta idle largo — no compite con LCP/FCP. */
   const [loadScene, setLoadScene] = useState(false);
 
   useEffect(() => {
@@ -119,9 +134,9 @@ export function HeroSection() {
     let idleId: number | undefined;
     let timeoutId: number | undefined;
     if (typeof window.requestIdleCallback === "function") {
-      idleId = window.requestIdleCallback(start, { timeout: 1600 });
+      idleId = window.requestIdleCallback(start, { timeout: 4500 });
     } else {
-      timeoutId = window.setTimeout(start, 500);
+      timeoutId = window.setTimeout(start, 2800);
     }
     return () => {
       cancelled = true;
@@ -171,7 +186,7 @@ export function HeroSection() {
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden>
         <div
           className="aurora-glow absolute -top-[12%] left-[8%] h-[460px] w-[520px] opacity-80"
-          style={{ background: `radial-gradient(circle, ${design.brand.cyan}55, transparent 70%)` }}
+          style={{ background: `radial-gradient(circle, ${HERO_CYAN}55, transparent 70%)` }}
         />
         <div className="aurora-glow absolute -top-[8%] right-[6%] h-[540px] w-[600px]" />
         <div className="absolute bottom-0 left-1/2 h-[48%] w-[140%] -translate-x-1/2 [perspective:900px]">
@@ -196,11 +211,9 @@ export function HeroSection() {
       </div>
 
       <div className="container-pro relative z-10 w-full">
-        <div className="grid items-center gap-6 sm:gap-8 lg:grid-cols-12 lg:gap-4">
-          <motion.div
-            initial={reduceMotion ? false : { opacity: 0, y: 28 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 320, damping: 32 }}
+        <div className="grid items-start gap-12 sm:items-center sm:gap-14 lg:grid-cols-12 lg:items-center lg:gap-4">
+          {/* Copy del Hero sin Motion: LCP/FCP no dependen de la hidratación. */}
+          <div
             className={
               SHOW_HERO_STACK
                 ? "relative z-20 max-w-xl lg:col-span-5"
@@ -225,58 +238,54 @@ export function HeroSection() {
             </p>
 
             <div className="mt-6 flex w-full flex-col gap-2.5 sm:mt-8 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-              <motion.button
+              <button
                 type="button"
                 onClick={onQuote}
-                whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-                transition={{ type: "spring", stiffness: 400, damping: 28, mass: 0.8 }}
-                className="group btn-primary inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 text-sm font-semibold text-white active:scale-[0.98] sm:w-auto"
+                className="group btn-primary inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 text-sm font-semibold text-white transition-transform active:scale-[0.98] sm:w-auto"
               >
                 <span>Solicitar cotización</span>
                 <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-              </motion.button>
+              </button>
 
-              <motion.a
+              <a
                 href={whatsappHref(
                   "Hola Findtec, deseo solicitar información y una cotización para mi empresa.",
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
-                whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-                transition={{ type: "spring", stiffness: 400, damping: 28, mass: 0.8 }}
                 className="inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-[#25D366]/45 bg-[#25D366]/10 px-5 text-sm font-semibold text-foreground backdrop-blur-md transition-colors hover:bg-[#25D366]/16 active:scale-[0.98] dark:bg-[#25D366]/12 sm:w-auto"
               >
                 <WhatsAppBadge />
                 <span>Escríbenos por WhatsApp</span>
-              </motion.a>
+              </a>
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:mt-5">
-              <p className="text-[11px] leading-snug text-muted-foreground sm:text-[12px]">
+            <div className="mt-4 flex flex-col items-start gap-1.5 sm:mt-5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1.5">
+              <p className="max-w-[22rem] text-[11px] leading-snug text-muted-foreground sm:max-w-none sm:text-[12px]">
                 Cotización personalizada y sin compromiso · Respuesta en menos de 24 h
               </p>
               <SectionAnchor
                 id="proyectos"
-                className="min-h-11 inline-flex items-center text-[12px] font-medium text-foreground underline underline-offset-4 transition-colors hover:text-primary sm:min-h-0"
+                className="inline-flex min-h-10 items-center text-[12px] font-medium text-foreground underline underline-offset-4 transition-colors hover:text-primary sm:min-h-0"
               >
                 Ver proyectos
               </SectionAnchor>
             </div>
-          </motion.div>
+          </div>
 
           {/* Stack 3D — temporalmente oculto (SHOW_HERO_STACK) */}
           {SHOW_HERO_STACK ? (
             <motion.div
-              className="relative mx-auto w-full max-w-[min(100%,340px)] sm:max-w-[440px] lg:col-span-7 lg:ml-auto lg:mr-0 lg:max-w-[500px]"
+              className="relative z-10 mx-auto mt-1 w-full max-w-[min(82%,248px)] pt-1 sm:mt-0 sm:max-w-[320px] sm:pt-2 md:max-w-[380px] lg:col-span-7 lg:ml-auto lg:mr-0 lg:max-w-[500px] lg:pt-0"
               style={{ perspective: 1600 }}
               onMouseMove={onPointerMove}
               onMouseLeave={onPointerLeave}
-              initial={reduceMotion ? false : { opacity: 0, scale: 0.9, y: 40 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 1.1, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              initial={reduceMotion ? false : { y: 28 }}
+              animate={{ y: 0 }}
+              transition={{ type: "spring", stiffness: 280, damping: 30, delay: 0.05 }}
             >
               <motion.div
-                className="relative aspect-[16/11] [transform-style:preserve-3d]"
+                className="relative aspect-[16/12] [transform-style:preserve-3d] sm:aspect-[16/11]"
                 style={
                   reduceMotion
                     ? { rotateY: -18, rotateX: 8 }
@@ -290,7 +299,7 @@ export function HeroSection() {
                 />
 
                 <div
-                  className="absolute left-[4%] top-[-28%] w-[72%]"
+                  className="absolute left-[4%] top-[-8%] w-[70%] sm:top-[-16%] sm:w-[72%] lg:top-[-28%]"
                   style={{ transform: "translateZ(-50px)" }}
                 >
                   <motion.div
@@ -298,16 +307,15 @@ export function HeroSection() {
                     transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
                   >
                     <HeroWindow
-                      src="/images/findtec-service-cloud.webp"
+                      src="/images/findtec-service-cloud-hero.webp"
                       alt="Cloud e infraestructura Findtec"
                       className="opacity-90"
-                      priority
                     />
                   </motion.div>
                 </div>
 
                 <div
-                  className="absolute right-[2%] top-[14%] w-[74%]"
+                  className="absolute right-[2%] top-[16%] w-[70%] sm:top-[14%] sm:w-[74%]"
                   style={{ transform: "translateZ(40px)" }}
                 >
                   <motion.div
@@ -315,7 +323,7 @@ export function HeroSection() {
                     transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
                   >
                     <HeroWindow
-                      src="/images/findtec-service-erp.webp"
+                      src="/images/findtec-service-erp-hero.webp"
                       alt="Software de gestión Findtec"
                       imgClassName="object-[center_72%]"
                       priority
@@ -324,7 +332,7 @@ export function HeroSection() {
                 </div>
 
                 <div
-                  className="absolute bottom-[2%] left-[14%] w-[42%]"
+                  className="absolute bottom-[4%] left-[12%] w-[40%] sm:bottom-[2%] sm:left-[14%] sm:w-[42%]"
                   style={{ transform: "translateZ(110px)" }}
                 >
                   <motion.div
@@ -332,7 +340,7 @@ export function HeroSection() {
                     transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
                   >
                     <HeroWindow
-                      src="/images/findtec-service-ia.webp"
+                      src="/images/findtec-service-ia-hero.webp"
                       alt="Integraciones con IA Findtec"
                     />
                   </motion.div>

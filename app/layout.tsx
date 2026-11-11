@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono, Outfit, Plus_Jakarta_Sans } from "next/font/google";
+import { preload } from "react-dom";
 
+import { LazyToaster } from "@/components/lazy-toaster";
 import { SiteFrame } from "@/components/site-frame";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/sonner";
 import { company } from "@/lib/company";
 import "./globals.css";
 
@@ -11,21 +12,21 @@ const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-outfit",
   display: "swap",
-  weight: ["500", "600", "700", "800"],
+  weight: ["600", "700", "800"],
 });
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-plus-jakarta",
   display: "swap",
-  weight: ["500", "600", "700", "800"],
+  weight: ["500", "600", "700"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
   display: "swap",
-  weight: ["400", "500", "600"],
+  weight: ["400", "500"],
   preload: false,
 });
 
@@ -78,7 +79,7 @@ export const metadata: Metadata = {
     description,
     images: [
       {
-        url: `${siteUrl}/images/findtec-mark.png`,
+        url: `${siteUrl}/images/findtec-mark-opt.png`,
         width: 512,
         height: 512,
         alt: siteName,
@@ -89,12 +90,15 @@ export const metadata: Metadata = {
     card: "summary",
     title: "Findtec Soluciones | Software e IA para negocios",
     description,
-    images: [`${siteUrl}/images/findtec-mark.png`],
+    images: [`${siteUrl}/images/findtec-mark-opt.png`],
   },
   icons: {
-    icon: [{ url: "/images/findtec-mark.png", type: "image/png" }],
-    apple: [{ url: "/images/findtec-mark.png", type: "image/png" }],
-    shortcut: "/images/findtec-mark.png",
+    icon: [
+      { url: "/images/findtec-mark-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/images/findtec-mark-64.png", sizes: "64x64", type: "image/png" },
+    ],
+    apple: [{ url: "/images/findtec-mark-180.png", sizes: "180x180", type: "image/png" }],
+    shortcut: "/images/findtec-mark-32.png",
   },
 };
 
@@ -103,6 +107,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  preload("/images/findtec-service-erp-hero.webp", {
+    as: "image",
+    type: "image/webp",
+    fetchPriority: "high",
+  });
+
   return (
     <html
       lang="es"
@@ -118,17 +128,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <SiteFrame>{children}</SiteFrame>
-
-          {/* Notificaciones estilo Emil Kowalski con bordes impecables */}
-          <Toaster
-            position="bottom-right"
-            richColors
-            closeButton
-            toastOptions={{
-              className:
-                "border border-black/[0.08] dark:border-white/[0.1] shadow-2xl backdrop-blur-xl bg-background/90 text-foreground",
-            }}
-          />
+          <LazyToaster />
         </ThemeProvider>
       </body>
     </html>

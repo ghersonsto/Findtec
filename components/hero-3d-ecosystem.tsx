@@ -447,9 +447,10 @@ export function Hero3DEcosystem({ onReady, onFailure }: { onReady: () => void; o
   const reducedMotion = useReducedMotion();
   const region = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(true);
+  const [tabVisible, setTabVisible] = useState(true);
   const [compact, setCompact] = useState(false);
   const [pointer] = useState(() => new Vector2());
-  const moving = visible && !reducedMotion;
+  const moving = visible && tabVisible && !reducedMotion;
 
   useEffect(() => {
     const target = region.current;
@@ -465,9 +466,13 @@ export function Hero3DEcosystem({ onReady, onFailure }: { onReady: () => void; o
     });
     ro.observe(target);
 
+    const onVisibility = () => setTabVisible(document.visibilityState === "visible");
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
       io.disconnect();
       ro.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 
@@ -501,15 +506,24 @@ export function Hero3DEcosystem({ onReady, onFailure }: { onReady: () => void; o
           camera={{ position: [5.4, 5.1, 5.6], zoom: 78, near: -50, far: 50 }}
           gl={{
             alpha: true,
-            antialias: true,
+            antialias: false,
             powerPreference: "high-performance",
             premultipliedAlpha: false,
             stencil: false,
+            depth: true,
           }}
-          dpr={[1, 1.5]}
+          dpr={[1, 1.25]}
           frameloop={moving ? "always" : "demand"}
           onCreated={({ gl }) => {
             gl.setClearColor(0x000000, 0);
+            gl.domElement.addEventListener(
+              "webglcontextlost",
+              (event) => {
+                event.preventDefault();
+                onFailure?.();
+              },
+              { once: true },
+            );
           }}
           style={{ width: "100%", height: "100%", background: "transparent", pointerEvents: "none" }}
         >

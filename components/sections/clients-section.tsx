@@ -1,7 +1,6 @@
-"use client";
-
 import { BrandIcon, TECH_BRANDS } from "@/components/tech-brand-icons";
 
+/** Cinta tecnológica — Server Component (animación CSS, sin hidratación). */
 export function ClientsSection() {
   const loop = [...TECH_BRANDS, ...TECH_BRANDS];
 

@@ -1,5 +1,3 @@
-"use client";
-
 import Image from "next/image";
 
 import { company } from "@/lib/company";
@@ -28,15 +26,17 @@ const markPixels = {
   panel: 44,
 } as const;
 
-/** Marca Findtec — isotipo oficial. */
+/** Marca Findtec — isotipo optimizado (WebP ~7KB). */
 export function FindtecMark({
   className,
   size = 40,
   title = "Findtec",
+  priority = false,
 }: {
   className?: string;
   size?: number;
   title?: string;
+  priority?: boolean;
 }) {
   return (
     <Image
@@ -44,7 +44,8 @@ export function FindtecMark({
       alt={title}
       width={size}
       height={size}
-      priority
+      priority={priority}
+      sizes={`${size}px`}
       className={cn(
         "shrink-0 rounded-full object-cover ring-1 ring-black/[0.06] dark:ring-white/[0.12]",
         className,
@@ -71,6 +72,7 @@ export function BrandLogo({
       className={markBox[size]}
       size={markPixels[size]}
       title={company.name}
+      priority={isNav}
     />
   );
 

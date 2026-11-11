@@ -1,5 +1,13 @@
-@import 'tailwindcss';
+/* source(none): evitamos escanear el kit shadcn completo en components/ui (casi no se usa). */
+@import 'tailwindcss' source(none);
 @import 'tw-animate-css';
+
+@source "./**/*.{tsx,ts,jsx,js}";
+@source "../components/**/*.{tsx,ts,jsx,js}";
+@source "../hooks/**/*.{tsx,ts,jsx,js}";
+@source "../lib/**/*.{tsx,ts,jsx,js}";
+@source not "../components/ui/**";
+@source "../components/ui/sonner.tsx";
 
 @custom-variant dark (&:is(.dark *));
 

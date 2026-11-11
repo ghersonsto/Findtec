@@ -173,6 +173,7 @@ function CarouselCard({
               alt={slide.title}
               fill
               sizes="(max-width: 640px) 70vw, 380px"
+              loading={isFront ? "eager" : "lazy"}
               draggable={false}
               className="object-cover object-center transition-transform duration-700 ease-out select-none group-hover:scale-105"
             />

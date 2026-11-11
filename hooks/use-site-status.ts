@@ -35,11 +35,14 @@ const fallback: SiteStatus = {
   channels: { whatsapp: true, email: true, form: false, phone: true },
 };
 
-export function useSiteStatus() {
+/** `enabled` evita fetch en el critical path hasta abrir el chat. */
+export function useSiteStatus(enabled = true) {
   const [status, setStatus] = useState<SiteStatus>(fallback);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    if (!enabled) return;
+
     let active = true;
 
     fetch("/api/site")
@@ -73,7 +76,7 @@ export function useSiteStatus() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [enabled]);
 
   return { status, loaded };
 }

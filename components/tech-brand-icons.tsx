@@ -8,7 +8,7 @@ type Brand = {
   microsoft?: boolean;
 };
 
-/** Stack real del proyecto — isotipos oficiales vía Simple Icons CDN. */
+/** Stack real del proyecto — isotipos locales (sin CDN en el critical path). */
 export const TECH_BRANDS: Brand[] = [
   { name: "Laravel 11", slug: "laravel", color: "FF2D20" },
   { name: "Vue.js 3", slug: "vuedotjs", color: "4FC08D" },
@@ -59,9 +59,9 @@ export function BrandIcon({
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- SVG brand marks from Simple Icons CDN
+    // eslint-disable-next-line @next/next/no-img-element -- SVG locales ligeros
     <img
-      src={`https://cdn.simpleicons.org/${slug}/${color}`}
+      src={`/icons/tech/${slug}.svg`}
       alt=""
       aria-hidden
       width={18}
@@ -74,6 +74,7 @@ export function BrandIcon({
       )}
       loading="lazy"
       decoding="async"
+      data-brand-color={color}
     />
   );
 }

@@ -15,9 +15,13 @@ export const company = {
   shortAddress: "Chorrillos, Perú",
   siteUrl: "https://findtec.pe",
   logo: {
-    dark: "/images/logo-dark.png",
-    light: "/images/logo-light.png",
-    mark: "/images/findtec-mark.png",
+    /** Versiones ligeras para UI / SEO; originales .png se conservan en /public/images. */
+    dark: "/images/logo-dark.webp",
+    light: "/images/logo-light.webp",
+    mark: "/images/findtec-mark.webp",
+    markPng: "/images/findtec-mark-opt.png",
+    icon: "/images/findtec-mark-32.png",
+    apple: "/images/findtec-mark-180.png",
   },
 };
 

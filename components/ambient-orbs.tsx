@@ -1,5 +1,4 @@
-"use client";
-
+/** Decoración CSS pura — sin JS de cliente. */
 export function AmbientOrbs() {
   return (
     <div

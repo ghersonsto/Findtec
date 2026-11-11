@@ -117,7 +117,7 @@ export function SmartChatbot() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const sessionRef = useRef<ConversationSession | null>(null);
   const lastFailedPrompt = useRef<{ text: string; agent?: AgentId } | null>(null);
-  const { status: siteStatus } = useSiteStatus();
+  const { status: siteStatus, loaded: siteLoaded } = useSiteStatus(isOpen);
 
   useEffect(() => {
     sessionRef.current = conversationSession;
@@ -180,7 +180,7 @@ export function SmartChatbot() {
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen || booted) return;
+    if (!isOpen || booted || !siteLoaded) return;
 
     const boot = async () => {
       setIsTyping(true);
@@ -231,7 +231,7 @@ export function SmartChatbot() {
     };
 
     void boot();
-  }, [isOpen, booted, siteStatus.businessHours]);
+  }, [isOpen, booted, siteLoaded, siteStatus.businessHours]);
 
   useEffect(() => {
     setShowServicePicker(activeAgent === "cotizacion");
