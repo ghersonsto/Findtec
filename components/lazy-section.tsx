@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -20,40 +21,54 @@ function SectionSkeleton({ className }: { className?: string }) {
 type LazySectionProps = {
   loader: () => Promise<Record<string, unknown>>;
   exportName: string;
+  /** ID de ancla del navbar — disponible en el host hasta que monta la sección real. */
+  sectionId: string;
   skeletonClassName?: string;
   rootMargin?: string;
 };
 
 /**
- * Carga el chunk de una sección solo al acercarse al viewport.
- * Evita descargar GSAP/carrusel/Motion de secciones inferiores en el primer paint.
+ * Carga diferida por viewport, pero responde a `findtec-ensure-section`
+ * para que el navbar pueda forzar el montaje y hacer scroll al ID correcto.
  */
 export function LazySection({
   loader,
   exportName,
+  sectionId,
   skeletonClassName,
   rootMargin = "320px 0px",
 }: LazySectionProps) {
   const host = useRef<HTMLDivElement>(null);
   const [node, setNode] = useState<ReactNode>(null);
+  const loadingRef = useRef(false);
+  const loadedRef = useRef(false);
+
+  const load = useCallback(async () => {
+    if (loadingRef.current || loadedRef.current) return;
+    loadingRef.current = true;
+    try {
+      const mod = await loader();
+      const Comp = mod[exportName] as ComponentType | undefined;
+      if (!Comp) return;
+      loadedRef.current = true;
+      setNode(<Comp />);
+    } catch {
+      loadingRef.current = false;
+    }
+  }, [loader, exportName, sectionId]);
+
+  useEffect(() => {
+    if (!node) return;
+    window.dispatchEvent(
+      new CustomEvent("findtec-section-ready", { detail: { id: sectionId } }),
+    );
+  }, [node, sectionId]);
 
   useEffect(() => {
     const el = host.current;
     if (!el) return;
 
-    let cancelled = false;
     let idleId: number | undefined;
-
-    const load = async () => {
-      try {
-        const mod = await loader();
-        if (cancelled) return;
-        const Comp = mod[exportName] as ComponentType | undefined;
-        if (Comp) setNode(<Comp />);
-      } catch {
-        /* skeleton permanece */
-      }
-    };
 
     const io = new IntersectionObserver(
       ([entry]) => {
@@ -71,17 +86,25 @@ export function LazySection({
     );
     io.observe(el);
 
-    return () => {
-      cancelled = true;
+    const onEnsure = (event: Event) => {
+      const id = (event as CustomEvent<{ id?: string }>).detail?.id;
+      if (id !== sectionId) return;
       io.disconnect();
+      void load();
+    };
+    window.addEventListener("findtec-ensure-section", onEnsure);
+
+    return () => {
+      io.disconnect();
+      window.removeEventListener("findtec-ensure-section", onEnsure);
       if (idleId !== undefined && typeof window.cancelIdleCallback === "function") {
         window.cancelIdleCallback(idleId);
       }
     };
-  }, [loader, exportName, rootMargin]);
+  }, [load, rootMargin, sectionId]);
 
   return (
-    <div ref={host}>
+    <div ref={host} data-nav-section={sectionId}>
       {node ?? <SectionSkeleton className={skeletonClassName} />}
     </div>
   );

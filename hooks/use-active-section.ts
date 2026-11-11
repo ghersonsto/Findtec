@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 /**
  * Marca la sección visible con IntersectionObserver.
- * La banda de detección se ancla bajo `--nav-scroll-offset` (stack sticky).
+ * Se reengancha cuando LazySection monta secciones diferidas.
  */
 export function useActiveSection(sectionIds: readonly string[], enabled: boolean) {
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -16,11 +16,7 @@ export function useActiveSection(sectionIds: readonly string[], enabled: boolean
     }
 
     const ratios = new Map<string, number>();
-    const elements = sectionIds
-      .map((id) => document.getElementById(id))
-      .filter((el): el is HTMLElement => Boolean(el));
-
-    if (elements.length === 0) return;
+    let io: IntersectionObserver | null = null;
 
     const navTop = () => {
       const raw = getComputedStyle(document.documentElement)
@@ -48,10 +44,14 @@ export function useActiveSection(sectionIds: readonly string[], enabled: boolean
       setActiveId(bestRatio > 0 ? best : null);
     };
 
-    let io: IntersectionObserver | null = null;
-
     const observe = () => {
       io?.disconnect();
+      const elements = sectionIds
+        .map((id) => document.getElementById(id))
+        .filter((el): el is HTMLElement => Boolean(el));
+
+      if (elements.length === 0) return;
+
       const top = Math.round(navTop());
       io = new IntersectionObserver(
         (entries) => {
@@ -62,12 +62,12 @@ export function useActiveSection(sectionIds: readonly string[], enabled: boolean
         },
         {
           root: null,
-          // Zona útil bajo el stack de navegación
           rootMargin: `-${top}px 0px -45% 0px`,
           threshold: [0, 0.12, 0.28, 0.45, 0.65, 1],
         },
       );
       for (const el of elements) io.observe(el);
+      pickActive();
     };
 
     observe();
@@ -75,15 +75,17 @@ export function useActiveSection(sectionIds: readonly string[], enabled: boolean
     const onScroll = () => {
       if (window.scrollY < 120) setActiveId(null);
     };
+    const onSectionReady = () => observe();
+
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", observe, { passive: true });
-
-    pickActive();
+    window.addEventListener("findtec-section-ready", onSectionReady);
 
     return () => {
       io?.disconnect();
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", observe);
+      window.removeEventListener("findtec-section-ready", onSectionReady);
     };
   }, [enabled, sectionIds]);
 

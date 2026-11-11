@@ -3,7 +3,12 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
-import { prefersReducedMotion, scrollToSection, syncNavScrollOffset } from "@/lib/site-nav";
+import {
+  ensureSectionElement,
+  prefersReducedMotion,
+  scrollToSection,
+  syncNavScrollOffset,
+} from "@/lib/site-nav";
 
 /**
  * - Entrada / refresh: siempre inicia en el tope (limpia hash residual).
@@ -49,11 +54,23 @@ export function HashScroll() {
         return;
       }
       const id = raw.split("?")[0];
-      if (!id || !document.getElementById(id)) return;
+      if (!id) return;
 
-      scrollToSection(id, {
-        behavior: instant || prefersReducedMotion() ? "auto" : "smooth",
-        updateHash: false,
+      const run = () => {
+        if (!document.getElementById(id)) return;
+        scrollToSection(id, {
+          behavior: instant || prefersReducedMotion() ? "auto" : "smooth",
+          updateHash: false,
+        });
+      };
+
+      if (document.getElementById(id)) {
+        run();
+        return;
+      }
+
+      void ensureSectionElement(id).then((el) => {
+        if (el) run();
       });
     };
 

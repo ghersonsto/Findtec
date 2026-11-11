@@ -6,6 +6,9 @@ import { useEffect } from "react";
  * Protección disuasoria (no es seguridad absoluta).
  * Los navegadores permiten abrir DevTools por otros caminos; esto solo
  * reduce la inspección casual sin bloquear la experiencia del sitio.
+ *
+ * No usa sessionStorage permanente: el aviso puede repetirse en cada intento
+ * deliberado, con un cooldown corto anti-ráfaga.
  */
 
 const NOTICE = [
@@ -13,10 +16,11 @@ const NOTICE = [
   "",
   "Todos los derechos reservados.",
   "",
-  "Para consultas técnicas o comerciales, comunícate con nosotros mediante nuestros canales oficiales.",
+  "Para consultas comerciales o técnicas, comunícate mediante nuestros canales oficiales.",
 ].join("\n");
 
-const SESSION_KEY = "findtec-protect-notice";
+/** Evita alertas duplicadas por el mismo gesto / teclas repetidas. */
+const COOLDOWN_MS = 750;
 
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
@@ -42,8 +46,6 @@ function isInspectShortcut(event: KeyboardEvent): boolean {
 
   if (key === "F12") return true;
 
-  const ctrlOrMeta = event.ctrlKey || event.metaKey;
-
   // Windows / Linux: Ctrl+Shift+I/J/C, Ctrl+U
   if (event.ctrlKey && event.shiftKey && (lower === "i" || lower === "j" || lower === "c")) {
     return true;
@@ -57,8 +59,6 @@ function isInspectShortcut(event: KeyboardEvent): boolean {
     return true;
   }
 
-  // Evitar interferir con atajos normales (copiar/pegar/seleccionar, etc.)
-  void ctrlOrMeta;
   return false;
 }
 
@@ -69,55 +69,34 @@ export function SiteProtection() {
     if (isLocalHost(window.location.hostname)) return;
 
     let alerting = false;
-    let shownThisPage = false;
-
-    const alreadyShown = () => {
-      if (shownThisPage) return true;
-      try {
-        return sessionStorage.getItem(SESSION_KEY) === "1";
-      } catch {
-        return false;
-      }
-    };
-
-    const markShown = () => {
-      shownThisPage = true;
-      try {
-        sessionStorage.setItem(SESSION_KEY, "1");
-      } catch {
-        /* modo privado / storage bloqueado */
-      }
-    };
+    let lastAlertAt = 0;
 
     const showNotice = () => {
-      if (alerting || alreadyShown()) return;
+      if (alerting) return;
+      const now = Date.now();
+      if (now - lastAlertAt < COOLDOWN_MS) return;
+
       alerting = true;
-      markShown();
+      lastAlertAt = now;
       try {
         window.alert(NOTICE);
       } finally {
-        // Liberar tras el cierre del diálogo nativo
         window.setTimeout(() => {
           alerting = false;
-        }, 250);
+        }, 200);
       }
     };
 
     const onContextMenu = (event: MouseEvent) => {
       if (isEditableTarget(event.target)) return;
+      // Solo menú contextual: no toca clics normales del navbar/botones.
       event.preventDefault();
       showNotice();
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (!isInspectShortcut(event)) return;
-      // No interferir con campos de formulario salvo F12 / atajos de inspección
-      if (isEditableTarget(event.target) && event.key !== "F12") {
-        // Ctrl+U en un input no debe abrir "ver código", pero tampoco debe
-        // interrumpir escritura: solo cancelamos el atajo de inspección.
-      }
       event.preventDefault();
-      event.stopPropagation();
       showNotice();
     };
 
@@ -125,12 +104,8 @@ export function SiteProtection() {
     document.addEventListener("keydown", onKeyDown, { capture: true });
 
     return () => {
-      document.removeEventListener("contextmenu", onContextMenu, {
-        capture: true,
-      } as EventListenerOptions);
-      document.removeEventListener("keydown", onKeyDown, {
-        capture: true,
-      } as EventListenerOptions);
+      document.removeEventListener("contextmenu", onContextMenu, true);
+      document.removeEventListener("keydown", onKeyDown, true);
     };
   }, []);
 
