@@ -181,26 +181,43 @@ export function scrollElementWithNavOffset(
 }
 
 /**
- * Fuerza el montaje de secciones diferidas (`LazySection`) y espera el nodo.
- * Causa histórica del bug del navbar: getElementById fallaba porque el chunk
- * aún no se había cargado (IntersectionObserver).
+ * Fuerza el montaje de la sección objetivo y de todas las anteriores.
+ * Si solo se monta el destino (p. ej. #contacto), los skeletons superiores
+ * aún tienen poca altura: el scroll “acierta” y luego, al expandirse
+ * proyectos/nosotros/procesos, el viewport queda en la sección equivocada.
  */
 export function ensureSectionElement(
   id: string,
-  timeoutMs = 4500,
+  timeoutMs = 6000,
 ): Promise<HTMLElement | null> {
   if (typeof window === "undefined") return Promise.resolve(null);
 
-  const existing = document.getElementById(id);
-  if (existing) return Promise.resolve(existing);
+  const order = SITE_SECTION_IDS as readonly string[];
+  const index = order.indexOf(id);
+  const needed = index >= 0 ? order.slice(0, index + 1) : [id];
 
-  window.dispatchEvent(
-    new CustomEvent("findtec-ensure-section", { detail: { id } }),
-  );
+  for (const sectionId of needed) {
+    window.dispatchEvent(
+      new CustomEvent("findtec-ensure-section", { detail: { id: sectionId } }),
+    );
+  }
+
+  const allReady = () => needed.every((sectionId) => document.getElementById(sectionId));
+
+  if (allReady()) {
+    return new Promise((resolve) => {
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          resolve(document.getElementById(id));
+        });
+      });
+    });
+  }
 
   return new Promise((resolve) => {
     const started = Date.now();
     let settled = false;
+    let finishing = false;
 
     const finish = (el: HTMLElement | null) => {
       if (settled) return;
@@ -209,24 +226,31 @@ export function ensureSectionElement(
       resolve(el);
     };
 
-    const onReady = (event: Event) => {
-      const readyId = (event as CustomEvent<{ id?: string }>).detail?.id;
-      if (readyId && readyId !== id) return;
-      const el = document.getElementById(id);
-      if (el) finish(el);
+    const settleAndFinish = () => {
+      if (settled || finishing || !allReady()) return;
+      finishing = true;
+      // Esperar layout real tras montar chunks (evita scroll sobre skeletons).
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          window.setTimeout(() => {
+            finish(document.getElementById(id));
+          }, 50);
+        });
+      });
+    };
+
+    const onReady = () => {
+      settleAndFinish();
     };
 
     window.addEventListener("findtec-section-ready", onReady);
 
     const tick = () => {
       if (settled) return;
-      const el = document.getElementById(id);
-      if (el) {
-        finish(el);
-        return;
-      }
+      settleAndFinish();
+      if (settled || finishing) return;
       if (Date.now() - started >= timeoutMs) {
-        finish(null);
+        finish(document.getElementById(id));
         return;
       }
       window.requestAnimationFrame(tick);
@@ -259,7 +283,6 @@ export function scrollToSection(
   if (!el) {
     void ensureSectionElement(id).then((found) => {
       if (!found) return;
-      // Reintentar cuando el ancla / sección ya existe en el DOM.
       scrollToSection(id, options);
     });
     return false;
@@ -270,9 +293,11 @@ export function scrollToSection(
   let refined = false;
   const refine = () => {
     if (refined) return;
+    const current = document.getElementById(id);
+    if (!current) return;
     refined = true;
     syncNavScrollOffset();
-    const target = getSectionScrollTop(el);
+    const target = getSectionScrollTop(current);
     const delta = target - window.scrollY;
     if (Math.abs(delta) > 4) {
       window.scrollBy({ top: delta, behavior: "auto" });
@@ -305,7 +330,7 @@ export function scrollToSection(
 
 /**
  * Navega a una sección del landing.
- * Si ya estamos en `/`, fuerza la carga diferida cuando haga falta y hace scroll;
+ * Si ya estamos en `/`, monta la cadena de secciones necesarias y hace scroll;
  * si no, va a `/#id`.
  */
 export function navigateToSection(id: string) {
@@ -317,16 +342,7 @@ export function navigateToSection(id: string) {
       return;
     }
 
-    // Siempre pedir montaje: LazySection puede no haber cargado el chunk aún.
-    window.dispatchEvent(
-      new CustomEvent("findtec-ensure-section", { detail: { id } }),
-    );
-
-    if (document.getElementById(id)) {
-      scrollToSection(id);
-      return;
-    }
-
+    // Siempre asegurar trail completo antes del scroll (también si el id ya existe).
     void ensureSectionElement(id).then((el) => {
       if (el) scrollToSection(id);
     });
