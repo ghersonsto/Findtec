@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 
 import { company } from "@/lib/company";
 import { heroReel } from "@/lib/media";
+import { clientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 /** API de diseño / motion 3D para el front (tokens + capas + tilt). */
-export async function GET() {
+export async function GET(request: Request) {
+  const limited = rateLimit(`design:${clientIp(request)}`, 60, 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
+
   return NextResponse.json({
     ok: true,
     brand: {

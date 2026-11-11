@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { agents, buildAgentReply, routeAgent, welcomeMessage, type AgentId } from "@/lib/agents";
+import { clientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 const sessionSchema = z
   .object({
@@ -71,6 +72,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const limited = rateLimit(`agents:${clientIp(request)}`, 40, 60_000);
+    if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
+
     const body = await request.json();
     const data = schema.parse(body);
 

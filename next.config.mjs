@@ -4,6 +4,43 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/**
+ * CSP moderada: permite Next.js, Unsplash, Spline y WhatsApp sin romper la UI.
+ * No es un sandbox extremo; prioriza estabilidad en Vercel.
+ */
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'self'",
+  "form-action 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https://images.unsplash.com",
+  "font-src 'self' data:",
+  "connect-src 'self' https://wa.me https://api.whatsapp.com https://prod.spline.design https://*.spline.design",
+  "frame-src 'self' https://my.spline.design https://prod.spline.design",
+  "worker-src 'self' blob:",
+  "media-src 'self' blob:",
+  "upgrade-insecure-requests",
+].join("; ");
+
+const securityHeaders = [
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+  },
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=63072000; includeSubDomains; preload",
+  },
+  { key: "X-DNS-Prefetch-Control", value: "on" },
+  { key: "Content-Security-Policy", value: contentSecurityPolicy },
+];
+
 /** @type {import("next").NextConfig} */
 const nextConfig = {
   turbopack: {
@@ -40,6 +77,10 @@ const nextConfig = {
   },
   async headers() {
     return [
+      {
+        source: "/:path*",
+        headers: securityHeaders,
+      },
       {
         source: "/icons/:path*",
         headers: [

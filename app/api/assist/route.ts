@@ -4,6 +4,7 @@ import { z } from "zod";
 import { whatsappHref } from "@/lib/company";
 import { retrieveKnowledge, suggestServiceFromQuery } from "@/lib/knowledge";
 import { quoteHref } from "@/lib/quote";
+import { clientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 const assistSchema = z.object({
   message: z.string().trim().min(3).max(800),
@@ -12,6 +13,9 @@ const assistSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const limited = rateLimit(`assist:${clientIp(request)}`, 20, 60_000);
+    if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
+
     const body = await request.json();
     const data = assistSchema.parse(body);
     const { option, confidence, sources } = suggestServiceFromQuery(data.message);

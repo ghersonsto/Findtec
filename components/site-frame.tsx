@@ -4,6 +4,7 @@ import { LazyChatbot } from "@/components/lazy-chatbot";
 import { Navbar } from "@/components/navbar";
 import { ScrollProgress } from "@/components/scroll-progress";
 import { Footer } from "@/components/sections/footer";
+import { SiteProtection } from "@/components/security/site-protection";
 
 export function SiteFrame({ children }: { children: React.ReactNode }) {
   return (
@@ -17,6 +18,8 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
         <Footer />
         <LazyChatbot />
       </div>
+      {/* Solo en build de producción; en localhost el componente no activa listeners. */}
+      {process.env.NODE_ENV === "production" ? <SiteProtection /> : null}
     </div>
   );
 }

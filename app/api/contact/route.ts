@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import { z } from "zod";
 
 import { company } from "@/lib/company";
+import { clientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 import { getServiceOption, resolveServiceValue, serviceOptions } from "@/lib/services";
 
 const contactSchema = z.object({
@@ -30,6 +31,9 @@ function escapeHtml(value: string) {
 
 export async function POST(request: Request) {
   try {
+    const limited = rateLimit(`contact:${clientIp(request)}`, 5, 60_000);
+    if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
+
     const body = await request.json();
     const data = contactSchema.parse(body);
 
